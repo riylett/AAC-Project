@@ -11,6 +11,7 @@ typedef struct {
     int** matrix;   // adjacency matrix (0/1)
 } Graph;
 
+int** allocMatrix(int n);
 Graph* loadGraph(const char* filename);
 void freeGraph(Graph* g);
 

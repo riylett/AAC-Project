@@ -3,13 +3,7 @@
 #include <string.h>
 #include "graph.h"
 #include "subiso.h"
-
-typedef struct {
-    int* newVertices;
-    int newVertexCount;
-    int (*newEdges)[2];
-    int newEdgeCount;
-} Extension;
+#include "exact_extension.h"
 
 
 static Graph* cloneGraphWithExtraVertices(const Graph* H, int kv) {
@@ -116,7 +110,7 @@ static Extension* tryExtension(const Graph* G, const Graph* H,
 
     addEdgesToGraph(Hprime, edgeSet, ke);
 
-    bool iso = isSubgraphIsomorphic((Graph*)G, Hprime);
+    bool iso = isSubgraphIsomorphic(G, Hprime);
 
     Extension* ext = NULL;
     if (iso) {
@@ -127,13 +121,18 @@ static Extension* tryExtension(const Graph* G, const Graph* H,
     return ext;
 }
 
-// Generate all pairs and combine edges
-static int generateAllPairs(int* vertices, int total, int (*edges)[2]) {
+// Generate all pairs excluding edges that already exist in H
+static int generateAllPairs(const Graph* H, int* vertices, int total, int (*edges)[2]) {
     int idx = 0;
     for (int i = 0; i < total; i++) {
         for (int j = i + 1; j < total; j++) {
-            edges[idx][0] = vertices[i];
-            edges[idx][1] = vertices[j];
+            int u = vertices[i];
+            int v = vertices[j];
+            // Skip edges that already exist in H
+            if (u < H->n && v < H->n && H->matrix[u][v])
+                continue;
+            edges[idx][0] = u;
+            edges[idx][1] = v;
             idx++;
         }
     }
@@ -177,8 +176,10 @@ static Extension* tryKVKE(const Graph* G, const Graph* H, int kv, int ke) {
     int (*curr)[2] = NULL;
     Extension* result = NULL;
 
-    newVertices = malloc(kv * sizeof(int));
-    for (int i = 0; i < kv; i++) newVertices[i] = H->n + i;
+    if (kv > 0) {
+        newVertices = malloc(kv * sizeof(int));
+        for (int i = 0; i < kv; i++) newVertices[i] = H->n + i;
+    }
 
     int totalV = H->n + kv;
     allVertices = malloc(totalV * sizeof(int));
@@ -187,7 +188,7 @@ static Extension* tryKVKE(const Graph* G, const Graph* H, int kv, int ke) {
 
     int maxEdges = totalV * (totalV - 1) / 2;
     edges = malloc(maxEdges * sizeof(int[2]));
-    int edgeCount = generateAllPairs(allVertices, totalV, edges);
+    int edgeCount = generateAllPairs(H,allVertices, totalV, edges);
 
     if (ke <= edgeCount) {
         curr = malloc(ke * sizeof(int[2]));

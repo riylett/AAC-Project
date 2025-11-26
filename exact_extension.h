@@ -10,6 +10,8 @@ typedef struct {
     int newEdgeCount;
 } Extension;
 
-Extension* exactMinimalExtension(Graph* G, Graph* H);
+Extension* exactMinimalExtension(const Graph* G, const Graph* H);
+Extension* findExtension(const Graph* G, const Graph* H, int maxSize);
+void freeExtensionObject(Extension* e);
 
 #endif

@@ -3,7 +3,7 @@
 #include <string.h>
 #include "graph.h"
 
-static int** allocMatrix(int n) {
+int** allocMatrix(int n) {
     int** m = malloc(n * sizeof(int*));
     if (!m) return NULL;
     for (int i = 0; i < n; i++) {

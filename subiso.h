@@ -4,6 +4,6 @@
 #include <stdbool.h>
 #include "graph.h"
 
-bool isSubgraphIsomorphic(Graph* G, Graph* H);
+bool isSubgraphIsomorphic(const Graph* G, const Graph* H);
 
 #endif

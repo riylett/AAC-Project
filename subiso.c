@@ -6,7 +6,7 @@
 #include "subiso.h"
 
 static bool subgraphRec(
-    Graph* G, Graph* H,
+    const Graph* G, const Graph* H,
     int* map,        // map from G->H
     bool* usedH,     // which H vertices are used
     bool* adjG,
@@ -14,7 +14,7 @@ static bool subgraphRec(
     int mapped       // count of mapped G vertices
 );
 
-static void computeNewAdjG(bool* adj, Graph* g, int v, int* map) {
+static void computeNewAdjG(bool* adj, const Graph* g, int v, int* map) {
     // Add neighbors of v in G (only unmapped ones according to map)
     for (int i = 0; i < g->adjSize[v]; i++) {
         int nb = g->adj[v][i];
@@ -23,7 +23,7 @@ static void computeNewAdjG(bool* adj, Graph* g, int v, int* map) {
     }
 }
 
-static void computeNewAdjH(bool* adj, Graph* g, int v, bool* used) {
+static void computeNewAdjH(bool* adj, const Graph* g, int v, bool* used) {
     // Add neighbors of v in H (only unused ones according to used[])
     for (int i = 0; i < g->adjSize[v]; i++) {
         int nb = g->adj[v][i];
@@ -32,7 +32,7 @@ static void computeNewAdjH(bool* adj, Graph* g, int v, bool* used) {
     }
 }
 
-bool isSubgraphIsomorphic(Graph* G, Graph* H) {
+bool isSubgraphIsomorphic(const Graph* G, const Graph* H) {
     // H must be at least as large as G
     if (H->n < G->n) return false;
 
@@ -68,7 +68,7 @@ static int chooseVertex(bool* adj, int n, int* map) {
 }
 
 static bool subgraphRec(
-    Graph* G, Graph* H,
+    const Graph* G, const Graph* H,
     int* map,
     bool* usedH,
     bool* adjG,
@@ -151,10 +151,11 @@ static bool subgraphRec(
         computeNewAdjG(adjG, G, n, map); // 'map' marks used G vertices implicitly
 
         adjH[m] = false;
-        computeNewAdjH(adjH, H, m, usedH);
-
-        if (subgraphRec(G, H, map, usedH, adjG, adjH, mapped + 1))
+        computeNewAdjH(adjH, H, m, usedH);        if (subgraphRec(G, H, map, usedH, adjG, adjH, mapped + 1)) {
+            free(oldAdjG);
+            free(oldAdjH);
             return true;
+        }
 
         // --- Backtrack ---
         map[n] = -1;
