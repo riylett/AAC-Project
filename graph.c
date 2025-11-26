@@ -5,8 +5,14 @@
 
 static int** allocMatrix(int n) {
     int** m = malloc(n * sizeof(int*));
+    if (!m) return NULL;
     for (int i = 0; i < n; i++) {
         m[i] = calloc(n, sizeof(int));
+        if (!m[i]) {
+            for (int j = 0; j < i; j++) free(m[j]);
+            free(m);
+            return NULL;
+        }
     }
     return m;
 }
