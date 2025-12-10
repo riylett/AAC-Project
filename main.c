@@ -15,139 +15,337 @@ typedef enum {
 } Algorithm;
 
 static void printUsage(const char* programName) {
-    printf("Usage: %s <graph G file> <graph H file> [algorithm]\n", programName);
+    printf("Usage:\n");
+    printf("  %s <input_file> [algorithm]           - Single file with both graphs\n", programName);
+    printf("  %s <graph_G> <graph_H> [algorithm]    - Two separate graph files\n", programName);
     printf("\nArguments:\n");
-    printf("  graph G file  - The pattern graph to embed\n");
-    printf("  graph H file  - The host graph to extend\n");
-    printf("  algorithm     - Optional: 'greedy' (default), 'exact', or 'subiso'\n");
+    printf("  input_file  - File containing both graphs (G and H) in adjacency matrix format\n");
+    printf("  graph_G     - File containing graph G (pattern) in adjacency matrix format\n");
+    printf("  graph_H     - File containing graph H (host) in adjacency matrix format\n");
+    printf("  algorithm   - Optional: 'greedy' (default), 'exact', or 'subiso'\n");
+    printf("\nAlgorithms:\n");
+    printf("  greedy  - Approximate Minimal Extension Algorithm\n");
+    printf("  exact   - Exact Minimal Extension Algorithm\n");
+    printf("  subiso  - Only check subgraph isomorphism\n");
     printf("\nExamples:\n");
-    printf("  %s graph1.txt graph2.txt          (uses greedy)\n", programName);
-    printf("  %s graph1.txt graph2.txt greedy   (uses greedy)\n", programName);
-    printf("  %s graph1.txt graph2.txt exact    (uses exact)\n", programName);
-    printf("  %s graph1.txt graph2.txt subiso   (subgraph isomorphism check only)\n", programName);
+    printf("  %s combined.txt              (single file, uses greedy)\n", programName);
+    printf("  %s combined.txt exact        (single file, uses exact)\n", programName);
+    printf("  %s graphG.txt graphH.txt     (two files, uses greedy)\n", programName);
+    printf("  %s graphG.txt graphH.txt exact (two files, uses exact)\n", programName);
+}
+
+static void printSeparator(void) {
+    printf("------------------------------------------------\n");
+}
+
+// Helper function to print the extended graph's adjacency matrix
+// Only prints if the extended graph has 20 or fewer vertices
+// Highlights new vertices and new edges
+static void printExtendedMatrix(const Graph* H, int newVertexCount, 
+                                 int (*newEdges)[2], int newEdgeCount) {
+    int newN = H->n + newVertexCount;
+    
+    // Count edges first (we need this for the summary)
+    int edgeCount = H->m + newEdgeCount;
+    
+    // Always print the summary
+    printf("\n  [EXTENDED GRAPH H']\n\n");
+    printf("    H' has %d vertices and %d edges\n", newN, edgeCount);
+    printf("    (Added %d new vertices and %d new edges)\n", newVertexCount, newEdgeCount);
+    
+    // Only print adjacency matrix for small graphs (20 or fewer vertices)
+    if (newN > 20) {
+        printf("\n    (Adjacency matrix not shown for graphs with more than 20 vertices)\n");
+        return;
+    }
+    
+    // Allocate extended matrix
+    int** extMatrix = malloc(newN * sizeof(int*));
+    for (int i = 0; i < newN; i++) {
+        extMatrix[i] = calloc(newN, sizeof(int));
+    }
+    
+    // Track which edges are new (for highlighting)
+    int** isNewEdge = malloc(newN * sizeof(int*));
+    for (int i = 0; i < newN; i++) {
+        isNewEdge[i] = calloc(newN, sizeof(int));
+    }
+    
+    // Copy original H matrix
+    for (int i = 0; i < H->n; i++) {
+        for (int j = 0; j < H->n; j++) {
+            extMatrix[i][j] = H->matrix[i][j];
+        }
+    }
+    
+    // Add new edges and mark them
+    for (int i = 0; i < newEdgeCount; i++) {
+        int u = newEdges[i][0];
+        int v = newEdges[i][1];
+        extMatrix[u][v] = 1;
+        extMatrix[v][u] = 1;
+        isNewEdge[u][v] = 1;
+        isNewEdge[v][u] = 1;
+    }
+    
+    // Print the matrix
+    printf("\n    Adjacency Matrix:\n");
+    
+    // Print column headers
+    printf("       ");
+    for (int j = 0; j < newN; j++) {
+        printf("%3d ", j);
+    }
+    printf("\n       ");
+    for (int j = 0; j < newN; j++) {
+        printf("----");
+    }
+    printf("\n");
+    
+    // Print matrix rows with row labels
+    for (int i = 0; i < newN; i++) {
+        printf("   %2d| ", i);
+        
+        for (int j = 0; j < newN; j++) {
+            if (extMatrix[i][j] && isNewEdge[i][j]) {
+                printf(" %d* ", extMatrix[i][j]);  // Mark new edges with *
+            } else {
+                printf(" %d  ", extMatrix[i][j]);
+            }
+        }
+        
+        if (i >= H->n) {
+            printf(" <- NEW");
+        }
+        printf("\n");
+    }
+    
+    // Print legend
+    printf("\n    * = new edge, NEW = new vertex\n");
+    
+    // Free matrices
+    for (int i = 0; i < newN; i++) {
+        free(extMatrix[i]);
+        free(isNewEdge[i]);
+    }
+    free(extMatrix);
+    free(isNewEdge);
 }
 
 static void runGreedyExtension(Graph* G, Graph* H) {
-    printf("Running GREEDY extension algorithm...\n");
+    printf("\n");
+    printSeparator();
+    printf("  GREEDY EXTENSION ALGORITHM\n");
+    printSeparator();
     
     GreedyExtension* ext = greedy_extension(G, H);
     
     if (ext) {
         int total_cost = ext->newVertexCount + ext->newEdgeCount;
-        printf("Greedy Extension Results:\n");
-        printf("  New vertices: %d\n", ext->newVertexCount);
-        printf("  New edges: %d\n", ext->newEdgeCount);
-        printf("  Total cost: %d\n", total_cost);
+        
+        printf("\n  [RESULTS]\n\n");
+        printf("    New vertices needed : %d\n", ext->newVertexCount);
+        printf("    New edges needed    : %d\n", ext->newEdgeCount);
+        printf("    -------------------------\n");
+        printf("    TOTAL COST          : %d\n", total_cost);
         
         if (ext->newVertexCount > 0) {
-            printf("\n  Vertices to add: ");
+            printf("\n  [VERTICES TO ADD]\n\n    ");
             for (int i = 0; i < ext->newVertexCount; i++) {
-                printf("%d ", ext->newVertices[i]);
+                printf("v%d ", ext->newVertices[i]);
             }
             printf("\n");
         }
         
         if (ext->newEdgeCount > 0) {
-            printf("  Edges to add: ");
+            printf("\n  [EDGES TO ADD]\n\n    ");
             for (int i = 0; i < ext->newEdgeCount; i++) {
-                printf("(%d-%d) ", ext->newEdges[i][0], ext->newEdges[i][1]);
+                printf("(%d, %d)", ext->newEdges[i][0], ext->newEdges[i][1]);
+                if (i < ext->newEdgeCount - 1) printf(", ");
             }
             printf("\n");
         }
         
+        // Print the extended graph's adjacency matrix
+        printExtendedMatrix(H, ext->newVertexCount, 
+                           ext->newEdges, ext->newEdgeCount);
+        
+        printf("\n");
+        printSeparator();
         freeGreedyExtension(ext);
     } else {
-        printf("Error computing greedy extension.\n");
+        printf("\n  [ERROR] Failed to compute greedy extension.\n");
+        printSeparator();
     }
 }
 
 static void runExactExtension(const Graph* G, const Graph* H) {
-    printf("Running EXACT extension algorithm...\n");
+    printf("\n");
+    printSeparator();
+    printf("  EXACT MINIMAL EXTENSION ALGORITHM\n");
+    printSeparator();
     
     Extension* ext = exactMinimalExtension(G, H);
     
     if (ext) {
         int total_cost = ext->newVertexCount + ext->newEdgeCount;
-        printf("Exact Minimal Extension Results:\n");
-        printf("  New vertices: %d\n", ext->newVertexCount);
-        printf("  New edges: %d\n", ext->newEdgeCount);
-        printf("  Total cost: %d\n", total_cost);
+        
+        printf("\n  [RESULTS]\n\n");
+        printf("    New vertices needed : %d\n", ext->newVertexCount);
+        printf("    New edges needed    : %d\n", ext->newEdgeCount);
+        printf("    -------------------------\n");
+        printf("    TOTAL COST          : %d\n", total_cost);
         
         if (ext->newVertexCount > 0) {
-            printf("\n  Vertices to add: ");
+            printf("\n  [VERTICES TO ADD]\n\n    ");
             for (int i = 0; i < ext->newVertexCount; i++) {
-                printf("%d ", ext->newVertices[i]);
+                printf("v%d ", ext->newVertices[i]);
             }
             printf("\n");
         }
         
         if (ext->newEdgeCount > 0) {
-            printf("  Edges to add: ");
+            printf("\n  [EDGES TO ADD]\n\n    ");
             for (int i = 0; i < ext->newEdgeCount; i++) {
-                printf("(%d-%d) ", ext->newEdges[i][0], ext->newEdges[i][1]);
+                printf("(%d, %d)", ext->newEdges[i][0], ext->newEdges[i][1]);
+                if (i < ext->newEdgeCount - 1) printf(", ");
             }
             printf("\n");
         }
         
+        // Print the extended graph's adjacency matrix
+        printExtendedMatrix(H, ext->newVertexCount, 
+                           ext->newEdges, ext->newEdgeCount);
+        
+        printf("\n");
+        printSeparator();
         freeExtensionObject(ext);
     } else {
-        printf("No extension found (this shouldn't happen).\n");
+        printf("\n  [ERROR] No extension found.\n");
+        printSeparator();
     }
 }
 
 int main(int argc, char** argv) {
-    const char *fileG, *fileH;
     Algorithm alg = ALG_GREEDY;
+    Graph *G = NULL, *H = NULL;
+    const char *inputInfo = NULL;
+    int twoFileMode = 0;
 
-    if (argc < 3 || argc > 4) {
+    if (argc < 2 || argc > 4) {
         printUsage(argv[0]);
         return 1;
     }
 
-    fileG = argv[1];
-    fileH = argv[2];
-
-    if (argc == 4) {
-        if (strcmp(argv[3], "exact") == 0) {
-            alg = ALG_EXACT;
-        } else if (strcmp(argv[3], "greedy") == 0) {
-            alg = ALG_GREEDY;
-        } else if (strcmp(argv[3], "subiso") == 0) {
-            alg = ALG_SUBISO_ONLY;
+    // Determine if we're using single file or two file mode
+    // Check if argv[2] is an algorithm name or a filename
+    if (argc >= 3) {
+        if (strcmp(argv[2], "exact") == 0 || strcmp(argv[2], "greedy") == 0 || strcmp(argv[2], "subiso") == 0) {
+            // Single file mode: argv[1] = combined file, argv[2] = algorithm
+            twoFileMode = 0;
         } else {
-            printf("Unknown algorithm: %s\n", argv[3]);
-            printf("Use 'greedy', 'exact', or 'subiso'\n");
-            return 1;
+            // Two file mode: argv[1] = G, argv[2] = H
+            twoFileMode = 1;
         }
     }
 
-    Graph* G = loadGraph(fileG);
-    Graph* H = loadGraph(fileH);
-
-    if (!G || !H) {
-        printf("Error loading graphs.\n");
-        if (G) freeGraph(G);
-        if (H) freeGraph(H);
-        return 1;
+    if (twoFileMode) {
+        // Two separate files mode
+        const char *fileG = argv[1];
+        const char *fileH = argv[2];
+        
+        // Parse algorithm if provided
+        if (argc == 4) {
+            if (strcmp(argv[3], "exact") == 0) {
+                alg = ALG_EXACT;
+            } else if (strcmp(argv[3], "greedy") == 0) {
+                alg = ALG_GREEDY;
+            } else if (strcmp(argv[3], "subiso") == 0) {
+                alg = ALG_SUBISO_ONLY;
+            } else {
+                printf("Unknown algorithm: %s\n", argv[3]);
+                printf("Use 'greedy', 'exact', or 'subiso'\n");
+                return 1;
+            }
+        }
+        
+        G = loadGraph(fileG);
+        if (!G) {
+            printf("[ERROR] Failed to load graph G from file: %s\n", fileG);
+            return 1;
+        }
+        
+        H = loadGraph(fileH);
+        if (!H) {
+            printf("[ERROR] Failed to load graph H from file: %s\n", fileH);
+            freeGraph(G);
+            return 1;
+        }
+        
+        // Create input info string for display
+        static char infoBuffer[512];
+        snprintf(infoBuffer, sizeof(infoBuffer), "%s (G), %s (H)", fileG, fileH);
+        inputInfo = infoBuffer;
+    } else {
+        // Single combined file mode
+        const char *inputFile = argv[1];
+        
+        // Parse algorithm if provided
+        if (argc == 3) {
+            if (strcmp(argv[2], "exact") == 0) {
+                alg = ALG_EXACT;
+            } else if (strcmp(argv[2], "greedy") == 0) {
+                alg = ALG_GREEDY;
+            } else if (strcmp(argv[2], "subiso") == 0) {
+                alg = ALG_SUBISO_ONLY;
+            } else {
+                printf("Unknown algorithm: %s\n", argv[2]);
+                printf("Use 'greedy', 'exact', or 'subiso'\n");
+                return 1;
+            }
+        }
+        
+        if (loadBothGraphs(inputFile, &G, &H) != 0) {
+            printf("[ERROR] Failed to load graphs from file: %s\n", inputFile);
+            return 1;
+        }
+        
+        inputInfo = inputFile;
     }
 
-    printf("Graph G: %d vertices, %d edges\n", G->n, G->m);
-    printf("Graph H: %d vertices, %d edges\n\n", H->n, H->m);
+    printf("\n");
+    printf("================================================\n");
+    printf("     SUBGRAPH ISOMORPHISM & GRAPH EXTENSION     \n");
+    printf("================================================\n");
+    printf("\n");
+    printf("  Input: %s\n", inputInfo);
+    printf("  Algorithm : %s\n", alg == ALG_EXACT ? "Exact" : (alg == ALG_GREEDY ? "Greedy" : "Subiso only"));
+    printf("\n");
+    printf("  +-------------------------------------------+\n");
+    printf("  |  GRAPH G (Pattern)                       |\n");
+    printf("  |    Vertices: %-4d    Edges: %-4d         |\n", G->n, G->m);
+    printf("  +-------------------------------------------+\n");
+    printf("  |  GRAPH H (Host)                          |\n");
+    printf("  |    Vertices: %-4d    Edges: %-4d         |\n", H->n, H->m);
+    printf("  +-------------------------------------------+\n");
+    printf("\n");
 
+    printf("  Checking subgraph isomorphism...\n");
     bool result = isSubgraphIsomorphic(G, H);
 
     if (result) {
-        printf("G IS isomorphic to a subgraph of H.\n");
+        printf("\n  [OK] G is isomorphic to a subgraph of H!\n");
         if (alg != ALG_SUBISO_ONLY) {
-            printf("No extension needed!\n");
+            printf("       No extension needed.\n");
         }
+        printf("\n================================================\n");
     } else {
-        printf("G is NOT isomorphic to any subgraph of H.\n");
+        printf("\n  [X] G is NOT isomorphic to any subgraph of H.\n");
         
         if (alg == ALG_SUBISO_ONLY) {
-            // Just the isomorphism check, no extension
+            printf("\n================================================\n");
         } else {
-            printf("Computing minimal extension...\n\n");
+            printf("      Computing minimal extension to make H contain G...\n");
             
             if (alg == ALG_GREEDY) {
                 runGreedyExtension(G, H);

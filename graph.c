@@ -17,61 +17,120 @@ int** allocMatrix(int n) {
     return m;
 }
 
-Graph* loadGraph(const char* filename) {
-    FILE* f = fopen(filename, "r");
+// Load a graph from an open file in adjacency matrix format
+// Format: first line is number of vertices, then n lines of adjacency matrix
+Graph* loadGraphFromFile(FILE* f) {
     if (!f) return NULL;
 
     Graph* g = malloc(sizeof(Graph));
+    if (!g) return NULL;
 
-    fscanf(f, "%d %d", &g->n, &g->m);
+    // Read number of vertices
+    if (fscanf(f, "%d", &g->n) != 1) {
+        free(g);
+        return NULL;
+    }
+
+    g->matrix = allocMatrix(g->n);
+    if (!g->matrix) {
+        free(g);
+        return NULL;
+    }
 
     g->adj = malloc(g->n * sizeof(int*));
     g->adjSize = calloc(g->n, sizeof(int));
-    g->matrix = allocMatrix(g->n);
-
-    // Temporary count of neighbors before allocating final adj lists
-    int* deg = calloc(g->n, sizeof(int));
-    int u, v;
-
-    int* U = malloc(g->m * sizeof(int));
-    int* V = malloc(g->m * sizeof(int));
-
-    for (int i = 0; i < g->m; i++) {
-        fscanf(f, "%d %d", &u, &v);
-        U[i] = u;
-        V[i] = v;
-        deg[u]++;
-        deg[v]++;
-        g->matrix[u][v] = 1;
-        g->matrix[v][u] = 1;
+    if (!g->adj || !g->adjSize) {
+        for (int i = 0; i < g->n; i++) free(g->matrix[i]);
+        free(g->matrix);
+        free(g->adj);
+        free(g->adjSize);
+        free(g);
+        return NULL;
     }
-    fclose(f);
 
+    // Read adjacency matrix
+    int edgeCount = 0;
+    for (int i = 0; i < g->n; i++) {
+        for (int j = 0; j < g->n; j++) {
+            if (fscanf(f, "%d", &g->matrix[i][j]) != 1) {
+                for (int k = 0; k < g->n; k++) free(g->matrix[k]);
+                free(g->matrix);
+                free(g->adj);
+                free(g->adjSize);
+                free(g);
+                return NULL;
+            }
+            // Count edges (only upper triangle for undirected)
+            if (i < j && g->matrix[i][j] > 0) {
+                edgeCount++;
+            }
+        }
+    }
+    g->m = edgeCount;
+
+    // Count degrees for adjacency list allocation
+    int* deg = calloc(g->n, sizeof(int));
+    for (int i = 0; i < g->n; i++) {
+        for (int j = 0; j < g->n; j++) {
+            if (g->matrix[i][j] > 0) {
+                deg[i]++;
+            }
+        }
+    }
+
+    // Allocate adjacency lists
     for (int i = 0; i < g->n; i++) {
         if (deg[i] > 0) {
             g->adj[i] = malloc(deg[i] * sizeof(int));
         } else {
-            g->adj[i] = NULL;  // Isolated vertex, no neighbors
+            g->adj[i] = NULL;
+        }
+        g->adjSize[i] = 0;
+    }
+
+    // Fill adjacency lists
+    for (int i = 0; i < g->n; i++) {
+        for (int j = 0; j < g->n; j++) {
+            if (g->matrix[i][j] > 0) {
+                g->adj[i][g->adjSize[i]++] = j;
+            }
         }
     }
 
-    memset(deg, 0, g->n * sizeof(int));
+    free(deg);
+    return g;
+}
 
-    for (int i = 0; i < g->m; i++) {
-        u = U[i]; 
-        v = V[i];
+// Load both graphs from a single file
+int loadBothGraphs(const char* filename, Graph** G, Graph** H) {
+    FILE* f = fopen(filename, "r");
+    if (!f) return -1;
 
-        g->adj[u][deg[u]++] = v;
-        g->adj[v][deg[v]++] = u;
+    *G = loadGraphFromFile(f);
+    if (!*G) {
+        fclose(f);
+        return -1;
     }
 
-    for (int i = 0; i < g->n; i++)
-        g->adjSize[i] = deg[i];
+    *H = loadGraphFromFile(f);
+    if (!*H) {
+        freeGraph(*G);
+        *G = NULL;
+        fclose(f);
+        return -1;
+    }
 
-    free(U);
-    free(V);
-    free(deg);
+    fclose(f);
+    return 0;
+}
 
+// Load single graph from file (adjacency matrix format)
+Graph* loadGraph(const char* filename) {
+    FILE* f = fopen(filename, "r");
+    if (!f) return NULL;
+
+    Graph* g = loadGraphFromFile(f);
+    fclose(f);
     return g;
 }
 
