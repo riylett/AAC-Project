@@ -176,6 +176,10 @@ static Extension* tryKVKE(const Graph* G, const Graph* H, int kv, int ke) {
     int (*curr)[2] = NULL;
     Extension* result = NULL;
 
+    if (ke > G->m) {
+        return NULL;  // Can't possibly need more edges than G has
+    }
+
     if (kv > 0) {
         newVertices = malloc(kv * sizeof(int));
         for (int i = 0; i < kv; i++) newVertices[i] = H->n + i;
@@ -188,9 +192,12 @@ static Extension* tryKVKE(const Graph* G, const Graph* H, int kv, int ke) {
 
     int maxEdges = totalV * (totalV - 1) / 2;
     edges = malloc(maxEdges * sizeof(int[2]));
-    int edgeCount = generateAllPairs(H,allVertices, totalV, edges);
+    int edgeCount = generateAllPairs(H, allVertices, totalV, edges);
 
-    if (ke <= edgeCount) {
+    // Handle ke=0 case separately (no edges to add, just vertices)
+    if (ke == 0) {
+        result = tryExtension(G, H, newVertices, kv, NULL, 0);
+    } else if (ke <= edgeCount) {
         curr = malloc(ke * sizeof(int[2]));
         int found = 0;
         combEdges(edges, edgeCount, ke, 0, 0, curr, &found, G, H, newVertices, kv, &result);

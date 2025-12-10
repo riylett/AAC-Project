@@ -213,22 +213,24 @@ GreedyExtension* greedy_extension(Graph* G, Graph* H) {
         order_idx++;
         
         // Add neighbors sorted by degree
-        VertexInfo* neighbors = malloc(G->adjSize[v] * sizeof(VertexInfo));
-        int n_count = 0;
-        for (int i = 0; i < G->adjSize[v]; i++) {
-            int nb = G->adj[v][i];
-            if (!visited[nb]) {
-                neighbors[n_count].id = nb;
-                neighbors[n_count].degree = G->adjSize[nb];
-                n_count++;
-                visited[nb] = 1;
+        if (G->adjSize[v] > 0) {
+            VertexInfo* neighbors = malloc(G->adjSize[v] * sizeof(VertexInfo));
+            int n_count = 0;
+            for (int i = 0; i < G->adjSize[v]; i++) {
+                int nb = G->adj[v][i];
+                if (!visited[nb]) {
+                    neighbors[n_count].id = nb;
+                    neighbors[n_count].degree = G->adjSize[nb];
+                    n_count++;
+                    visited[nb] = 1;
+                }
             }
+            qsort(neighbors, n_count, sizeof(VertexInfo), compareVertices);
+            for (int i = 0; i < n_count; i++) {
+                queue[back++] = neighbors[i].id;
+            }
+            free(neighbors);
         }
-        qsort(neighbors, n_count, sizeof(VertexInfo), compareVertices);
-        for (int i = 0; i < n_count; i++) {
-            queue[back++] = neighbors[i].id;
-        }
-        free(neighbors);
     }
     
     // Add any remaining unvisited vertices

@@ -87,9 +87,9 @@ void generate_random_connected(const char* filename, int n, int k) {
 
 void print_usage() {
     printf("Usage:\n");
-    printf("  ./aac path <output_file> <n>\n");
-    printf("  ./aac complete <output_file> <n>\n");
-    printf("  ./aac random <output_file> <n> <k>\n");
+    printf("  ./graphgen path <output_file> <n>\n");
+    printf("  ./graphgen complete <output_file> <n>\n");
+    printf("  ./graphgen random <output_file> <n> <k>\n");
 }
 
 int main(int argc, char** argv) {

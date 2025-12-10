@@ -47,8 +47,13 @@ Graph* loadGraph(const char* filename) {
     }
     fclose(f);
 
-    for (int i = 0; i < g->n; i++)
-        g->adj[i] = malloc(deg[i] * sizeof(int));
+    for (int i = 0; i < g->n; i++) {
+        if (deg[i] > 0) {
+            g->adj[i] = malloc(deg[i] * sizeof(int));
+        } else {
+            g->adj[i] = NULL;  // Isolated vertex, no neighbors
+        }
+    }
 
     memset(deg, 0, g->n * sizeof(int));
 

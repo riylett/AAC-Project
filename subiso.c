@@ -81,12 +81,21 @@ static bool subgraphRec(
     int n = chooseVertex(adjG, G->n, map);
     if (n == -1) return false;
 
-    // Candidate set is either all of H (if map empty)
-    // or Adj_H if frontier non-empty
+    // Check if the chosen vertex n is in the adjacency frontier of G
+    // If n is NOT in adjG (disconnected component), we should try ALL unused H vertices
+    bool nInFrontier = adjG[n];
+    
+    // Candidate set: if n is in frontier and there are adjacent unused H vertices, use them
+    // Otherwise, try all unused H vertices
     bool hasAdjH = false;
-    for (int i = 0; i < H->n; i++)
-        if (adjH[i] && !usedH[i])
-            hasAdjH = true;
+    if (nInFrontier) {
+        for (int i = 0; i < H->n; i++) {
+            if (adjH[i] && !usedH[i]) {
+                hasAdjH = true;
+                break;
+            }
+        }
+    }
 
     // try all candidates
     for (int m = 0; m < H->n; m++) {
@@ -151,7 +160,8 @@ static bool subgraphRec(
         computeNewAdjG(adjG, G, n, map); // 'map' marks used G vertices implicitly
 
         adjH[m] = false;
-        computeNewAdjH(adjH, H, m, usedH);        if (subgraphRec(G, H, map, usedH, adjG, adjH, mapped + 1)) {
+        computeNewAdjH(adjH, H, m, usedH);        
+        if (subgraphRec(G, H, map, usedH, adjG, adjH, mapped + 1)) {
             free(oldAdjG);
             free(oldAdjH);
             return true;

@@ -1,6 +1,6 @@
 # AAC-Project
 
-Subgraph Isomorphism and Graph Extension Tool
+Subgraph Isomorphism Algorithm and Minimal Graph Extension Algorithms
 
 ## Building
 
@@ -49,7 +49,7 @@ gcc -Wall -O2 -o graphgen.exe graphgen.c
 ...
 ```
 
-Example (a triangle):
+Example (a 3-cycle):
 ```
 3 3
 0 1
@@ -64,6 +64,11 @@ Example (a triangle):
 ```
 
 Types: `path`, `cycle`, `complete`, `random`
+
+- `path` - Path graph with n vertices
+- `cycle` - Cycle graph with n vertices
+- `complete` - Complete graph K_n
+- `random` - Random connected graph with n vertices and k edges (extra_param = number of edges)
 
 Examples:
 ```
