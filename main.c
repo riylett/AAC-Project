@@ -183,6 +183,13 @@ static void runGreedyExtension(Graph* G, Graph* H) {
         printf("    -------------------------\n");
         printf("    TOTAL COST          : %d\n", total_cost);
         
+        // Display metric information
+        printf("\n  [GRAPH METRICS]\n\n");
+        printf("    Size of G (|V|+|E|)       : %d\n", graphSize(G));
+        printf("    Size of H (|V|+|E|)       : %d\n", graphSize(H));
+        printf("    Size of H' (extended)     : %d\n", graphSize(H) + ext->newVertexCount + ext->newEdgeCount);
+        printf("    Extension Distance d(H,H'): %d\n", extensionDistance(G, H, ext->newVertexCount, ext->newEdgeCount));
+        
         if (ext->newVertexCount > 0) {
             printf("\n  [VERTICES TO ADD]\n\n    ");
             for (int i = 0; i < ext->newVertexCount; i++) {
@@ -229,6 +236,13 @@ static void runExactExtension(const Graph* G, const Graph* H) {
         printf("    New edges needed    : %d\n", ext->newEdgeCount);
         printf("    -------------------------\n");
         printf("    TOTAL COST          : %d\n", total_cost);
+        
+        // Display metric information
+        printf("\n  [GRAPH METRICS]\n\n");
+        printf("    Size of G (|V|+|E|)       : %d\n", graphSize(G));
+        printf("    Size of H (|V|+|E|)       : %d\n", graphSize(H));
+        printf("    Size of H' (extended)     : %d\n", graphSize(H) + ext->newVertexCount + ext->newEdgeCount);
+        printf("    Extension Distance d(H,H'): %d\n", extensionDistance(G, H, ext->newVertexCount, ext->newEdgeCount));
         
         if (ext->newVertexCount > 0) {
             printf("\n  [VERTICES TO ADD]\n\n    ");
@@ -358,9 +372,14 @@ int main(int argc, char** argv) {
     printf("  +-------------------------------------------+\n");
     printf("  |  GRAPH G (Pattern)                       |\n");
     printf("  |    Vertices: %-4d    Edges: %-4d         |\n", G->n, G->m);
+    printf("  |    Size S(G) = |V|+|E| = %-4d            |\n", graphSize(G));
     printf("  +-------------------------------------------+\n");
     printf("  |  GRAPH H (Host)                          |\n");
     printf("  |    Vertices: %-4d    Edges: %-4d         |\n", H->n, H->m);
+    printf("  |    Size S(H) = |V|+|E| = %-4d            |\n", graphSize(H));
+    printf("  +-------------------------------------------+\n");
+    printf("  |  GRAPH DISTANCE METRIC                   |\n");
+    printf("  |    d(G, H) = %-4d                        |\n", graphDistance(G, H));
     printf("  +-------------------------------------------+\n");
     printf("\n");
 
