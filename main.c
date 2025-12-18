@@ -132,6 +132,40 @@ static void printExtendedMatrix(const Graph* H, int newVertexCount,
     free(isNewEdge);
 }
 
+// Print adjacency matrix for an input graph (with an optional title)
+static void printAdjacencyMatrix(const Graph* g, const char* title) {
+    if (!g) return;
+
+    printf("\n  +-------------------------------------------+\n");
+    printf("  |  GRAPH %s (Adjacency Matrix)\n", title);
+    printf("  +-------------------------------------------+\n");
+    printf("    Vertices: %d    Edges: %d\n\n", g->n, g->m);
+
+    // Avoid printing extremely large matrices
+    if (g->n > 80) {
+        printf("    (Adjacency matrix not shown for graphs with more than 80 vertices)\n");
+        return;
+    }
+
+    // Print column headers
+    printf("       ");
+    for (int j = 0; j < g->n; j++) {
+        printf("%3d ", j);
+    }
+    printf("\n       ");
+    for (int j = 0; j < g->n; j++) printf("----");
+    printf("\n");
+
+    for (int i = 0; i < g->n; i++) {
+        printf("   %2d| ", i);
+        for (int j = 0; j < g->n; j++) {
+            printf(" %d  ", g->matrix[i][j]);
+        }
+        printf("\n");
+    }
+
+}
+
 static void runGreedyExtension(Graph* G, Graph* H) {
     printf("\n");
     printSeparator();
@@ -328,6 +362,11 @@ int main(int argc, char** argv) {
     printf("  |  GRAPH H (Host)                          |\n");
     printf("  |    Vertices: %-4d    Edges: %-4d         |\n", H->n, H->m);
     printf("  +-------------------------------------------+\n");
+    printf("\n");
+
+    // Print adjacency matrices for the input graphs
+    printAdjacencyMatrix(G, "G");
+    printAdjacencyMatrix(H, "H");
     printf("\n");
 
     printf("  Checking subgraph isomorphism...\n");

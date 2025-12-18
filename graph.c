@@ -27,6 +27,7 @@ Graph* loadGraphFromFile(FILE* f) {
 
     // Read number of vertices
     if (fscanf(f, "%d", &g->n) != 1) {
+        fprintf(stderr, "Error: could not read number of vertices from input.\n");
         free(g);
         return NULL;
     }
@@ -53,6 +54,7 @@ Graph* loadGraphFromFile(FILE* f) {
     for (int i = 0; i < g->n; i++) {
         for (int j = 0; j < g->n; j++) {
             if (fscanf(f, "%d", &g->matrix[i][j]) != 1) {
+                fprintf(stderr, "Error: could not read adjacency matrix element at row %d column %d.\n", i, j);
                 for (int k = 0; k < g->n; k++) free(g->matrix[k]);
                 free(g->matrix);
                 free(g->adj);
@@ -63,6 +65,33 @@ Graph* loadGraphFromFile(FILE* f) {
             // Count edges (only upper triangle for undirected)
             if (i < j && g->matrix[i][j] > 0) {
                 edgeCount++;
+            }
+        }
+    }
+    
+    // Validate input is an undirected graph: matrix must be symmetric
+    // and no self-loops (diagonal must be zero). If input violates this,
+    // free allocated resources and return NULL.
+    for (int i = 0; i < g->n; i++) {
+        if (g->matrix[i][i] != 0) {
+            fprintf(stderr, "Invalid input: self-loop detected at vertex %d. Expected an undirected simple graph (no self-loops).\n", i);
+            for (int k = 0; k < g->n; k++) free(g->matrix[k]);
+            free(g->matrix);
+            free(g->adj);
+            free(g->adjSize);
+            free(g);
+            return NULL;
+        }
+        for (int j = i + 1; j < g->n; j++) {
+            if (g->matrix[i][j] != g->matrix[j][i]) {
+                fprintf(stderr, "Invalid input: adjacency matrix is not symmetric at (%d,%d): %d vs %d. Expected undirected graph.\n",
+                        i, j, g->matrix[i][j], g->matrix[j][i]);
+                for (int k = 0; k < g->n; k++) free(g->matrix[k]);
+                free(g->matrix);
+                free(g->adj);
+                free(g->adjSize);
+                free(g);
+                return NULL;
             }
         }
     }

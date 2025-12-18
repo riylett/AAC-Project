@@ -41,17 +41,6 @@ debug: clean $(TARGET)
 clean:
 	del /Q *.o $(TARGET).exe $(GRAPHGEN).exe 2>nul || true
 
-# Run tests
-test: $(TARGET)
-	@echo === Test 1: Subgraph Isomorphism Only ===
-	./$(TARGET) graph_cycle1.txt graph_path.txt subiso
-	@echo.
-	@echo === Test 2: Greedy Extension ===
-	./$(TARGET) graph_cycle1.txt graph_path.txt greedy
-	@echo.
-	@echo === Test 3: Exact Extension ===
-	./$(TARGET) graph_cycle1.txt graph_path.txt exact
-
 # Help
 help:
 	@echo Available targets:
@@ -60,7 +49,6 @@ help:
 	@echo   graphgen  - Build graph generator only
 	@echo   debug     - Build with debug symbols
 	@echo   clean     - Remove build files
-	@echo   test      - Run basic tests
 	@echo   help      - Show this help message
 
-.PHONY: all clean debug test help
+.PHONY: all clean debug help
